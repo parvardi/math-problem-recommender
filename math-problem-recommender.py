@@ -228,16 +228,16 @@ else:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
         problem_text = st.session_state.current_problem["problem"]
-        # Wrap equations in LaTeX delimiters
-        problem_text = problem_text.replace("[", "\[").replace("]", "\]")
+        # Replace square brackets with LaTeX delimiters
+        problem_text = problem_text.replace("[", "$$").replace("]", "$$")
         st.markdown(problem_text)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
             st.markdown("**Solution:**")
             solution_text = st.session_state.current_problem["solution"]
-            # Wrap equations in LaTeX delimiters
-            solution_text = solution_text.replace("[", "\[").replace("]", "\]")
+            # Replace square brackets with LaTeX delimiters
+            solution_text = solution_text.replace("[", "$$").replace("]", "$$")
             st.markdown(solution_text)
 
         st.write("**Did you find this problem useful?**")
