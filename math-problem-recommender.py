@@ -228,20 +228,20 @@ else:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
         problem_text = st.session_state.current_problem["problem"]
-        # Replace LaTeX environments and equation delimiters
+        # Replace LaTeX delimiters and environments
+        problem_text = problem_text.replace("\\[", "$$").replace("\\]", "$$")
         problem_text = problem_text.replace("\\begin{align*}", "$$\\begin{aligned}")
         problem_text = problem_text.replace("\\end{align*}", "\\end{aligned}$$")
-        problem_text = problem_text.replace("[", "$$").replace("]", "$$")
         st.markdown(problem_text)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
             st.markdown("**Solution:**")
             solution_text = st.session_state.current_problem["solution"]
-            # Replace LaTeX environments and equation delimiters
+            # Apply the same replacements to the solution text
+            solution_text = solution_text.replace("\\[", "$$").replace("\\]", "$$")
             solution_text = solution_text.replace("\\begin{align*}", "$$\\begin{aligned}")
             solution_text = solution_text.replace("\\end{align*}", "\\end{aligned}$$")
-            solution_text = solution_text.replace("[", "$$").replace("]", "$$")
             st.markdown(solution_text)
             
         st.write("**Did you find this problem useful?**")
