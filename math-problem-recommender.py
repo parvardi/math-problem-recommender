@@ -228,7 +228,9 @@ else:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
         problem_text = st.session_state.current_problem["problem"]
-        # Replace square brackets with LaTeX delimiters
+        # Replace LaTeX environments and equation delimiters
+        problem_text = problem_text.replace("\\begin{align*}", "$$\\begin{aligned}")
+        problem_text = problem_text.replace("\\end{align*}", "\\end{aligned}$$")
         problem_text = problem_text.replace("[", "$$").replace("]", "$$")
         st.markdown(problem_text)
 
@@ -236,10 +238,12 @@ else:
         if show_solution:
             st.markdown("**Solution:**")
             solution_text = st.session_state.current_problem["solution"]
-            # Replace square brackets with LaTeX delimiters
+            # Replace LaTeX environments and equation delimiters
+            solution_text = solution_text.replace("\\begin{align*}", "$$\\begin{aligned}")
+            solution_text = solution_text.replace("\\end{align*}", "\\end{aligned}$$")
             solution_text = solution_text.replace("[", "$$").replace("]", "$$")
             st.markdown(solution_text)
-
+            
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
         with col1:
