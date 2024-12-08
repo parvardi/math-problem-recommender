@@ -212,16 +212,33 @@ else:
         else:
             st.error("❌ No problems found for this category.")
 
-    # Display the current problem
+    # # Display the current problem
+    # if st.session_state.current_problem:
+    #     st.subheader(f"📝 Problem in {st.session_state.category}")
+    #     st.markdown("**Problem:**")
+    #     st.markdown(st.session_state.current_problem["problem"])  # Render LaTeX if needed
+
+    #     show_solution = st.checkbox("🔍 Show Solution")
+    #     if show_solution:
+    #         st.markdown("**Solution:**")
+    #         st.markdown(st.session_state.current_problem["solution"])
+
+    # Display the current problem with appropriate LaTeX
     if st.session_state.current_problem:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
-        st.markdown(st.session_state.current_problem["problem"])  # Render LaTeX if needed
+        problem_text = st.session_state.current_problem["problem"]
+        # Wrap equations in LaTeX delimiters
+        problem_text = problem_text.replace("[", "\[").replace("]", "\]")
+        st.markdown(problem_text)
 
-        show_solution = st.checkbox("🔍 Show Solution")
+        show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
             st.markdown("**Solution:**")
-            st.markdown(st.session_state.current_problem["solution"])
+            solution_text = st.session_state.current_problem["solution"]
+            # Wrap equations in LaTeX delimiters
+            solution_text = solution_text.replace("[", "\[").replace("]", "\]")
+            st.markdown(solution_text)
 
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
