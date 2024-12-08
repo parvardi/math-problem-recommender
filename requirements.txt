@@ -2,3 +2,5 @@ streamlit
 streamlit_authenticator
 bcrypt
 neo4j
+matplotlib
+asymptote

@@ -4,6 +4,11 @@ import streamlit_authenticator as stauth
 from neo4j import GraphDatabase
 import random
 
+import matplotlib.pyplot as plt
+from asymptote import asymptote
+import io
+import base64
+
 # ---------------------
 # Set Streamlit Page Configuration FIRST
 st.set_page_config(page_title="Math Competition Problem Recommender")
@@ -123,6 +128,38 @@ def get_another_problem_in_category(category, exclude_id):
             }
     return None
 
+
+def asy_to_image(asy_code):
+    try:
+        asy = asymptote.Asymptote()
+        asy.draw(asy_code)
+        img_data = asy.get_image()
+        img_base64 = base64.b64encode(img_data).decode()
+        return f"data:image/png;base64,{img_base64}"
+    except Exception as e:
+        st.error(f"Error rendering Asymptote diagram: {e}")
+        return None
+    
+
+def process_text(text):
+    # Handle LaTeX
+    text = text.replace("\\[", "$$").replace("\\]", "$$")
+    text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
+    text = text.replace("\\end{align*}", "\\end{aligned}$$")
+    
+    # Handle Asymptote
+    asy_start = text.find("[asy]")
+    asy_end = text.find("[/asy]")
+    
+    if asy_start != -1 and asy_end != -1:
+        asy_code = text[asy_start+5:asy_end].strip()
+        img_src = asy_to_image(asy_code)
+        if img_src:
+            text = text[:asy_start] + f'<img src="{img_src}" />' + text[asy_end+6:]
+    
+    return text
+
+
 # ---------------------
 # Logout Function
 
@@ -223,27 +260,40 @@ else:
     #         st.markdown("**Solution:**")
     #         st.markdown(st.session_state.current_problem["solution"])
 
-    # Display the current problem with appropriate LaTeX
+    # # Display the current problem with appropriate LaTeX
+    # if st.session_state.current_problem:
+    #     st.subheader(f"📝 Problem in {st.session_state.category}")
+    #     st.markdown("**Problem:**")
+    #     problem_text = st.session_state.current_problem["problem"]
+    #     # Replace LaTeX delimiters and environments
+    #     problem_text = problem_text.replace("\\[", "$$").replace("\\]", "$$")
+    #     problem_text = problem_text.replace("\\begin{align*}", "$$\\begin{aligned}")
+    #     problem_text = problem_text.replace("\\end{align*}", "\\end{aligned}$$")
+    #     st.markdown(problem_text)
+
+    #     show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
+    #     if show_solution:
+    #         st.markdown("**Solution:**")
+    #         solution_text = st.session_state.current_problem["solution"]
+    #         # Apply the same replacements to the solution text
+    #         solution_text = solution_text.replace("\\[", "$$").replace("\\]", "$$")
+    #         solution_text = solution_text.replace("\\begin{align*}", "$$\\begin{aligned}")
+    #         solution_text = solution_text.replace("\\end{align*}", "\\end{aligned}$$")
+    #         st.markdown(solution_text)
+
+    # # Display the current problem with appropriate LaTeX and Asymptote
     if st.session_state.current_problem:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
-        problem_text = st.session_state.current_problem["problem"]
-        # Replace LaTeX delimiters and environments
-        problem_text = problem_text.replace("\\[", "$$").replace("\\]", "$$")
-        problem_text = problem_text.replace("\\begin{align*}", "$$\\begin{aligned}")
-        problem_text = problem_text.replace("\\end{align*}", "\\end{aligned}$$")
-        st.markdown(problem_text)
+        problem_text = process_text(st.session_state.current_problem["problem"])
+        st.markdown(problem_text, unsafe_allow_html=True)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
             st.markdown("**Solution:**")
-            solution_text = st.session_state.current_problem["solution"]
-            # Apply the same replacements to the solution text
-            solution_text = solution_text.replace("\\[", "$$").replace("\\]", "$$")
-            solution_text = solution_text.replace("\\begin{align*}", "$$\\begin{aligned}")
-            solution_text = solution_text.replace("\\end{align*}", "\\end{aligned}$$")
-            st.markdown(solution_text)
-            
+            solution_text = process_text(st.session_state.current_problem["solution"])
+            st.markdown(solution_text, unsafe_allow_html=True)
+                    
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
         with col1:
