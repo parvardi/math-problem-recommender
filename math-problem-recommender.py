@@ -3,11 +3,10 @@ import bcrypt
 import streamlit_authenticator as stauth
 from neo4j import GraphDatabase
 import random
-
-# import matplotlib.pyplot as plt
-# from asymptote import asymptote
-# import io
-# import base64
+import subprocess
+import tempfile
+import os
+from PIL import Image
 
 # ---------------------
 # Set Streamlit Page Configuration FIRST
@@ -21,10 +20,7 @@ NEO4J_PASSWORD = st.secrets["NEO4J_PASSWORD"]
 
 try:
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
-    # It's generally better to avoid Streamlit commands before set_page_config
-    # So, consider moving status messages below
 except Exception as e:
-    # Streamlit commands are allowed after set_page_config
     st.error(f"❌ Failed to connect to Neo4j: {e}")
 
 # ---------------------
@@ -128,37 +124,63 @@ def get_another_problem_in_category(category, exclude_id):
             }
     return None
 
+# ---------------------
+# Asymptote Rendering Functions
 
-# def asy_to_image(asy_code):
-#     try:
-#         asy = asymptote.Asymptote()
-#         asy.draw(asy_code)
-#         img_data = asy.get_image()
-#         img_base64 = base64.b64encode(img_data).decode()
-#         return f"data:image/png;base64,{img_base64}"
-#     except Exception as e:
-#         st.error(f"Error rendering Asymptote diagram: {e}")
-#         return None
-    
+def render_asy(asy_code: str) -> Image.Image:
+    # Create a temporary .asy file
+    with tempfile.NamedTemporaryFile(suffix=".asy", delete=False) as tmp:
+        tmp.write(asy_code.encode('utf-8'))
+        tmp_name = tmp.name
 
-# def process_text(text):
-#     # Handle LaTeX
-#     text = text.replace("\\[", "$$").replace("\\]", "$$")
-#     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
-#     text = text.replace("\\end{align*}", "\\end{aligned}$$")
-    
-#     # Handle Asymptote
-#     asy_start = text.find("[asy]")
-#     asy_end = text.find("[/asy]")
-    
-#     if asy_start != -1 and asy_end != -1:
-#         asy_code = text[asy_start+5:asy_end].strip()
-#         img_src = asy_to_image(asy_code)
-#         if img_src:
-#             text = text[:asy_start] + f'<img src="{img_src}" />' + text[asy_end+6:]
-    
-#     return text
+    # Compile to PNG using the asy command
+    png_name = tmp_name.replace(".asy", ".png")
+    subprocess.run(["asy", "-f", "png", tmp_name], check=True)
 
+    # Read the image
+    img = Image.open(png_name)
+
+    # Clean up temporary files
+    os.remove(tmp_name)
+    os.remove(png_name)
+
+    return img
+
+def process_text_with_asy(text: str):
+    # Convert LaTeX delimiters
+    text = text.replace("\\[", "$$").replace("\\]", "$$")
+    text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
+    text = text.replace("\\end{align*}", "\\end{aligned}$$")
+
+    start_tag = "[asy]"
+    end_tag = "[/asy]"
+    parts = []
+    start_idx = 0
+    while True:
+        asy_start = text.find(start_tag, start_idx)
+        if asy_start == -1:
+            # no more asy tags
+            parts.append(text[start_idx:])
+            break
+        asy_end = text.find(end_tag, asy_start)
+        if asy_end == -1:
+            # no closing tag found; treat remainder as text
+            parts.append(text[start_idx:])
+            break
+
+        # Extract text before the asy block
+        parts.append(text[start_idx:asy_start])
+
+        # Extract the asy code
+        asy_code = text[asy_start+len(start_tag):asy_end].strip()
+
+        # Render the asy code to an image
+        img = render_asy(asy_code)
+        parts.append(img)
+
+        start_idx = asy_end + len(end_tag)
+
+    return parts
 
 # ---------------------
 # Logout Function
@@ -249,51 +271,29 @@ else:
         else:
             st.error("❌ No problems found for this category.")
 
-    # # Display the current problem
-    # if st.session_state.current_problem:
-    #     st.subheader(f"📝 Problem in {st.session_state.category}")
-    #     st.markdown("**Problem:**")
-    #     st.markdown(st.session_state.current_problem["problem"])  # Render LaTeX if needed
-
-    #     show_solution = st.checkbox("🔍 Show Solution")
-    #     if show_solution:
-    #         st.markdown("**Solution:**")
-    #         st.markdown(st.session_state.current_problem["solution"])
-
-    # Display the current problem with appropriate LaTeX
+    # Display the current problem
     if st.session_state.current_problem:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
-        problem_text = st.session_state.current_problem["problem"]
-        # Replace LaTeX delimiters and environments
-        problem_text = problem_text.replace("\\[", "$$").replace("\\]", "$$")
-        problem_text = problem_text.replace("\\begin{align*}", "$$\\begin{aligned}")
-        problem_text = problem_text.replace("\\end{align*}", "\\end{aligned}$$")
-        st.markdown(problem_text)
+
+        # Process problem text
+        problem_content = process_text_with_asy(st.session_state.current_problem["problem"])
+        for item in problem_content:
+            if isinstance(item, str):
+                st.markdown(item)
+            else:
+                st.image(item)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
             st.markdown("**Solution:**")
-            solution_text = st.session_state.current_problem["solution"]
-            # Apply the same replacements to the solution text
-            solution_text = solution_text.replace("\\[", "$$").replace("\\]", "$$")
-            solution_text = solution_text.replace("\\begin{align*}", "$$\\begin{aligned}")
-            solution_text = solution_text.replace("\\end{align*}", "\\end{aligned}$$")
-            st.markdown(solution_text)
+            solution_content = process_text_with_asy(st.session_state.current_problem["solution"])
+            for item in solution_content:
+                if isinstance(item, str):
+                    st.markdown(item)
+                else:
+                    st.image(item)
 
-    # # # Display the current problem with appropriate LaTeX and Asymptote
-    # if st.session_state.current_problem:
-    #     st.subheader(f"📝 Problem in {st.session_state.category}")
-    #     st.markdown("**Problem:**")
-    #     problem_text = process_text(st.session_state.current_problem["problem"])
-    #     st.markdown(problem_text, unsafe_allow_html=True)
-
-    #     show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
-    #     if show_solution:
-    #         st.markdown("**Solution:**")
-    #         solution_text = process_text(st.session_state.current_problem["solution"])
-    #         st.markdown(solution_text, unsafe_allow_html=True)
-                    
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
         with col1:
@@ -311,6 +311,7 @@ else:
                     else:
                         st.error("❌ No other problems found in this category.")
                 st.rerun()
+
         with col2:
             if st.button("👎 Not really"):
                 log_problem_feedback(st.session_state.username, st.session_state.current_problem["problem_id"], "DISLIKED")
