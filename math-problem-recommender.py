@@ -204,6 +204,8 @@ def process_text_with_asy(text: str):
         # Extract the asy code
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
 
+        # Take care of image size
+        asy_code = "size(500,500);\n" + asy_code
         # Prepend import line if needed
         # Only do this if you know you always need olympiad.asy
         # If you want to be safe and always have olympiad functions available, do this unconditionally:
@@ -317,7 +319,7 @@ else:
             if isinstance(item, str):
                 st.markdown(item)
             else:
-                st.image(item)
+                st.image(img, use_column_width=True)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
@@ -327,7 +329,7 @@ else:
                 if isinstance(item, str):
                     st.markdown(item)
                 else:
-                    st.image(item)
+                    st.image(img, use_column_width=True)
 
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
