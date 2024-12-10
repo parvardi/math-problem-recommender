@@ -184,7 +184,7 @@ def process_text_with_asy(text: str):
     # Wrap align environment in a centered div for proper centering
     text = text.replace("$$\\begin{aligned}", "<div style='text-align: center;'>$$\\begin{aligned}")
     text = text.replace("\\end{aligned}$$", "\\end{aligned}$$</div>")
-    
+
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
@@ -322,7 +322,7 @@ else:
             if isinstance(item, str):
                 st.markdown(item)
             else:
-                st.image(item, use_column_width=True)
+                st.image(item, use_container_width=True)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
@@ -332,7 +332,7 @@ else:
                 if isinstance(item, str):
                     st.markdown(item)
                 else:
-                    st.image(item, use_column_width=True)
+                    st.image(item, use_container_width=True)
 
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
