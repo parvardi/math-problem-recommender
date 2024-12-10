@@ -127,13 +127,17 @@ def get_another_problem_in_category(category, exclude_id):
 # ---------------------
 # Asymptote Rendering Functions
 
-def render_asy(asy_code: str) -> Image.Image:
+def render_asy(asy_code: str):
     import subprocess, tempfile, os
     from PIL import Image
     import streamlit as st
 
-    # Create a temporary .asy file
-    with tempfile.NamedTemporaryFile(suffix=".asy", delete=False) as tmp:
+    # Use the current working directory for the temp file
+    current_dir = os.getcwd()
+    st.write(f"Current working directory: {current_dir}")
+
+    # Create a temporary .asy file in the current directory
+    with tempfile.NamedTemporaryFile(suffix=".asy", dir=current_dir, delete=False) as tmp:
         tmp.write(asy_code.encode('utf-8'))
         tmp_name = tmp.name
 
@@ -146,25 +150,30 @@ def render_asy(asy_code: str) -> Image.Image:
         # Asymptote failed. Let's see why.
         st.error("Asymptote error (stderr):\n" + result.stderr)
         st.error("Asymptote output (stdout):\n" + result.stdout)
-        # Clean up the temporary file
-        os.remove(tmp_name)
-        # Raise an error to stop further execution
+        # Clean up the temporary file if it still exists
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)
         raise RuntimeError("Asymptote failed to produce output. Check the error messages above.")
 
-    # Now attempt to open the image if created
+    # Check if the PNG was produced
     if not os.path.exists(png_name):
         # If PNG still doesn't exist, something went wrong
-        st.error("No PNG file was produced by Asymptote.")
-        os.remove(tmp_name)
+        st.error(f"No PNG file was produced by Asymptote. Expected at: {png_name}")
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)
         raise RuntimeError("No PNG file produced by Asymptote.")
 
+    # Attempt to open the image
     img = Image.open(png_name)
 
     # Clean up
-    os.remove(tmp_name)
-    os.remove(png_name)
+    if os.path.exists(tmp_name):
+        os.remove(tmp_name)
+    if os.path.exists(png_name):
+        os.remove(png_name)
 
     return img
+
 
 def process_text_with_asy(text: str):
     # Convert LaTeX delimiters
