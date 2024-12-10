@@ -128,6 +128,10 @@ def get_another_problem_in_category(category, exclude_id):
 # Asymptote Rendering Functions
 
 def render_asy(asy_code: str) -> Image.Image:
+    import subprocess, tempfile, os
+    from PIL import Image
+    import streamlit as st
+
     # Create a temporary .asy file
     with tempfile.NamedTemporaryFile(suffix=".asy", delete=False) as tmp:
         tmp.write(asy_code.encode('utf-8'))
@@ -135,18 +139,25 @@ def render_asy(asy_code: str) -> Image.Image:
 
     png_name = tmp_name.replace(".asy", ".png")
 
-    # Run asy and capture stderr
+    # Run asy and capture stderr and stdout
     result = subprocess.run(["asy", "-o", png_name, tmp_name], capture_output=True, text=True)
 
     if result.returncode != 0:
         # Asymptote failed. Let's see why.
-        st.error("Asymptote error:\n" + result.stderr)
-        # Clean up the temporary .asy file since we won't use it.
+        st.error("Asymptote error (stderr):\n" + result.stderr)
+        st.error("Asymptote output (stdout):\n" + result.stdout)
+        # Clean up the temporary file
         os.remove(tmp_name)
-        # No png was created, raise an error or return None
-        raise RuntimeError("Asymptote failed to produce output. See error above.")
+        # Raise an error to stop further execution
+        raise RuntimeError("Asymptote failed to produce output. Check the error messages above.")
 
-    # If we reach here, png_name should exist
+    # Now attempt to open the image if created
+    if not os.path.exists(png_name):
+        # If PNG still doesn't exist, something went wrong
+        st.error("No PNG file was produced by Asymptote.")
+        os.remove(tmp_name)
+        raise RuntimeError("No PNG file produced by Asymptote.")
+
     img = Image.open(png_name)
 
     # Clean up
