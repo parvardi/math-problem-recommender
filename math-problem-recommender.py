@@ -212,7 +212,7 @@ def process_text_with_asy(text: str):
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
 
         # Take care of image size
-        asy_code = asy_code + "unitsize(35mm);\n" + "size(1000,1000);\n"
+        asy_code = asy_code + "unitsize(35mm);\n" + "size(2000,2000);\n"
         # Prepend import line if needed
         # Only do this if you know you always need olympiad.asy
         # If you want to be safe and always have olympiad functions available, do this unconditionally:
