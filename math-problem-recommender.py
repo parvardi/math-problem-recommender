@@ -181,7 +181,10 @@ def process_text_with_asy(text: str):
     text = text.replace("\\[", "$$").replace("\\]", "$$")
     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
     text = text.replace("\\end{align*}", "\\end{aligned}$$")
-
+    # Wrap align environment in a centered div for proper centering
+    text = text.replace("$$\\begin{aligned}", "<div style='text-align: center;'>$$\\begin{aligned}")
+    text = text.replace("\\end{aligned}$$", "\\end{aligned}$$</div>")
+    
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
