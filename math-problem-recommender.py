@@ -292,7 +292,7 @@ else:
         st.subheader("📂 Choose a Category")
         category_choice = st.selectbox(
             "Select the category you're preparing for:",
-            ["Algebra", "Geometry", "Number Theory", "Precalculus", "Counting_and_Probability"]
+            ["Algebra", "Geometry", "Number Theory", "Precalculus", "Counting & Probability"]
         )
         if st.button("Confirm Category"):
             st.session_state.category = category_choice
