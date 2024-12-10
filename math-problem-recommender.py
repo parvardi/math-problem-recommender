@@ -126,7 +126,6 @@ def get_another_problem_in_category(category, exclude_id):
 
 # ---------------------
 # Asymptote Rendering Functions
-
 def render_asy(asy_code: str):
     import subprocess, tempfile, os
     from PIL import Image
@@ -143,14 +142,13 @@ def render_asy(asy_code: str):
 
     png_name = tmp_name.replace(".asy", ".png")
 
-    # Run asy and capture stderr and stdout
-    result = subprocess.run(["asy", "-o", png_name, tmp_name], capture_output=True, text=True)
+    # Run asy with explicit PNG format and output file
+    result = subprocess.run(["asy", "-f", "png", "-o", png_name, tmp_name], capture_output=True, text=True)
 
     if result.returncode != 0:
         # Asymptote failed. Let's see why.
         st.error("Asymptote error (stderr):\n" + result.stderr)
         st.error("Asymptote output (stdout):\n" + result.stdout)
-        # Clean up the temporary file if it still exists
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
         raise RuntimeError("Asymptote failed to produce output. Check the error messages above.")
@@ -173,6 +171,7 @@ def render_asy(asy_code: str):
         os.remove(png_name)
 
     return img
+
 
 
 def process_text_with_asy(text: str):
