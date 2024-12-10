@@ -319,7 +319,7 @@ else:
             if isinstance(item, str):
                 st.markdown(item)
             else:
-                st.image(img, use_column_width=True)
+                st.image(item, use_column_width=True)
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
@@ -329,7 +329,7 @@ else:
                 if isinstance(item, str):
                     st.markdown(item)
                 else:
-                    st.image(img, use_column_width=True)
+                    st.image(item, use_column_width=True)
 
         st.write("**Did you find this problem useful?**")
         col1, col2 = st.columns(2)
