@@ -174,6 +174,11 @@ def process_text_with_asy(text: str):
         # Extract the asy code
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
 
+        # Prepend import line if needed
+        # Only do this if you know you always need olympiad.asy
+        # If you want to be safe and always have olympiad functions available, do this unconditionally:
+        asy_code = "import olympiad;\n" + asy_code
+
         # Render the asy code to an image
         img = render_asy(asy_code)
         parts.append(img)
