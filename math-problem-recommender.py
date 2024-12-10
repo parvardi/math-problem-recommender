@@ -133,14 +133,23 @@ def render_asy(asy_code: str) -> Image.Image:
         tmp.write(asy_code.encode('utf-8'))
         tmp_name = tmp.name
 
-    # Compile to PNG using the asy command
     png_name = tmp_name.replace(".asy", ".png")
-    subprocess.run(["asy", "-f", "png", tmp_name], check=True)
 
-    # Read the image
+    # Run asy and capture stderr
+    result = subprocess.run(["asy", "-o", png_name, tmp_name], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        # Asymptote failed. Let's see why.
+        st.error("Asymptote error:\n" + result.stderr)
+        # Clean up the temporary .asy file since we won't use it.
+        os.remove(tmp_name)
+        # No png was created, raise an error or return None
+        raise RuntimeError("Asymptote failed to produce output. See error above.")
+
+    # If we reach here, png_name should exist
     img = Image.open(png_name)
 
-    # Clean up temporary files
+    # Clean up
     os.remove(tmp_name)
     os.remove(png_name)
 
