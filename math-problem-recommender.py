@@ -135,7 +135,7 @@ def render_asy(asy_code: str):
 
     # Use the current working directory for the temp file
     current_dir = os.getcwd()
-    st.write(f"Current working directory: {current_dir}")
+    # st.write(f"Current working directory: {current_dir}")
 
     # Create a temporary .asy file in the current directory
     with tempfile.NamedTemporaryFile(suffix=".asy", dir=current_dir, delete=False) as tmp:
