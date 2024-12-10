@@ -8,6 +8,20 @@ import tempfile
 import os
 from PIL import Image
 
+
+
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #FFFFFF;
+        color: #000000;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # ---------------------
 # Set Streamlit Page Configuration FIRST
 st.set_page_config(page_title="Math Competition Problem Recommender")
