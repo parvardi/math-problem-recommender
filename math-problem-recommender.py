@@ -185,6 +185,10 @@ def process_text_with_asy(text: str):
     text = text.replace("$$\\begin{aligned}", "<div style='text-align: center;'>$$\\begin{aligned}")
     text = text.replace("\\end{aligned}$$", "\\end{aligned}$$</div>")
 
+    # Remove newline characters within LaTeX equations
+    text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
+    text = text.replace("\n$$", "$$").replace("$$\n", "$$")
+    
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
@@ -208,7 +212,7 @@ def process_text_with_asy(text: str):
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
 
         # Take care of image size
-        asy_code = asy_code + "size(1000,1000);\n"
+        asy_code = asy_code + "unitsize(14mm);\n" + "size(1000,1000);\n"
         # Prepend import line if needed
         # Only do this if you know you always need olympiad.asy
         # If you want to be safe and always have olympiad functions available, do this unconditionally:
