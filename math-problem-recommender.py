@@ -219,8 +219,13 @@ def process_text_with_asy(text: str):
         asy_code = "import olympiad;\n" + asy_code
 
         # Render the asy code to an image
-        img = render_asy(asy_code)
-        parts.append(img)
+        try:
+            # Attempt to render the asy code
+            img = render_asy(asy_code)
+            parts.append(img)
+        except RuntimeError:
+            # If rendering fails, append a special flag
+            parts.append("ASY_RENDER_ERROR")
 
         start_idx = asy_end + len(end_tag)
 
