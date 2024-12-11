@@ -180,7 +180,7 @@ def process_text_with_asy(text: str):
     # Convert LaTeX delimiters
     text = text.replace("\\[", "$$").replace("\\]", "$$")
     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
-    text = text.replace("\\end{align*}", "\\end{aligned}$$")
+    text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
     # # Wrap align environment in a centered div for proper centering
     # text = text.replace("$$\\begin{aligned}", "<div style='text-align: center;'>$$\\begin{aligned}")
     # text = text.replace("\\end{aligned}$$", "\\end{aligned}$$</div>")
