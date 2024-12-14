@@ -55,27 +55,39 @@ def verify_user_credentials(username, password):
     return False
 
 def log_problem_feedback(username, problem_id, feedback_type):
+    """
+    Logs user feedback on a problem.
+    Adds a 'created_at' timestamp to facilitate chronological ordering.
+    """
     # feedback_type should be "LIKED" or "DISLIKED"
     query = f"""
     MATCH (u:User {{username:$username}})
     MATCH (p:Problem {{problem_id:$pid}})
     MERGE (u)-[r:{feedback_type}]->(p)
+    ON CREATE SET r.created_at = timestamp()
+    ON MATCH SET r.created_at = timestamp()
     RETURN r
     """
     with driver.session() as session:
         session.run(query, username=username, pid=problem_id)
 
 def get_user_history(username):
+    """
+    Retrieves the user's history, ordered by the most recent feedback first.
+    """
     query = """
     MATCH (u:User {username:$username})-[r]->(p:Problem)
-    RETURN p.problem_id as problem_id, TYPE(r) as feedback_type
-    ORDER BY p.problem_id
+    RETURN p.problem_id as problem_id, TYPE(r) as feedback_type, r.created_at as created_at
+    ORDER BY r.created_at DESC
     """
     with driver.session() as session:
         results = session.run(query, username=username).data()
         return results
 
 def get_problem_by_category(category):
+    """
+    Fetches a random problem from the specified category.
+    """
     query = """
     MATCH (p:Problem)
     WHERE p.type = $category
@@ -95,6 +107,9 @@ def get_problem_by_category(category):
     return None
 
 def get_similar_problems(problem_id):
+    """
+    Retrieves similar problems related to the given problem_id.
+    """
     query = """
     MATCH (p:Problem {problem_id:$pid})-[:SIMILAR_TO]->(other:Problem)
     RETURN other.problem_id AS problem_id, other.problem AS problem, other.solution AS solution
@@ -106,6 +121,9 @@ def get_similar_problems(problem_id):
         return results
 
 def get_another_problem_in_category(category, exclude_id):
+    """
+    Fetches another problem from the same category, excluding the specified problem_id.
+    """
     query = """
     MATCH (p:Problem)
     WHERE p.type = $category AND p.problem_id <> $exclude_id
@@ -125,6 +143,9 @@ def get_another_problem_in_category(category, exclude_id):
     return None
 
 def get_problem_by_id(pid):
+    """
+    Fetches a problem by its problem_id.
+    """
     query = """
     MATCH (p:Problem {problem_id:$pid})
     RETURN p.problem_id AS problem_id, p.problem AS problem, p.solution AS solution
@@ -142,10 +163,9 @@ def get_problem_by_id(pid):
 # ---------------------
 # Asymptote Rendering Functions
 def render_asy(asy_code: str):
-    import subprocess, tempfile, os
-    from PIL import Image
-    import streamlit as st
-
+    """
+    Renders Asymptote code to a PNG image.
+    """
     current_dir = os.getcwd()
 
     with tempfile.NamedTemporaryFile(suffix=".asy", dir=current_dir, delete=False) as tmp:
@@ -181,6 +201,9 @@ def render_asy(asy_code: str):
     return img
 
 def process_text_with_asy(text: str):
+    """
+    Processes text to render Asymptote code blocks as images.
+    """
     # Convert LaTeX delimiters
     text = text.replace("\\[", "$$").replace("\\]", "$$")
     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
@@ -234,6 +257,7 @@ def logout():
 # ---------------------
 # Streamlit UI and State Management
 
+# Initialize session state variables
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "username" not in st.session_state:
@@ -280,8 +304,8 @@ else:
     # Add CSS to make the history section scrollable if it gets too long
     st.sidebar.markdown("""
     <style>
-    /* Limit the height of the sidebar content and make it scrollable */
-    div[data-testid="stSidebar"] > div:nth-child(2) {
+    /* Limit the height of the sidebar history section and make it scrollable */
+    div[data-testid="stSidebar"] > div > div > div:nth-child(3) > div {
         max-height: 400px;
         overflow-y: auto;
     }
@@ -291,12 +315,15 @@ else:
     history = get_user_history(st.session_state.username)
     if history:
         for idx, h in enumerate(history, 1):
-            if st.sidebar.button(f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})", key=f"history_{h['problem_id']}_{idx}"):
+            display_text = f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})"
+            # Use a unique key by combining problem_id and index
+            button_key = f"history_{h['problem_id']}_{idx}"
+            if st.sidebar.button(display_text, key=button_key):
                 # When clicked, load that problem into the current problem state
                 loaded_prob = get_problem_by_id(h['problem_id'])
                 if loaded_prob:
                     st.session_state.current_problem = loaded_prob
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.sidebar.error("❌ Problem not found.")
     else:
