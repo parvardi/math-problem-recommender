@@ -186,16 +186,28 @@ def render_asy(asy_code: str):
     return img
 
 def process_text_with_asy(text: str):
-    # Convert LaTeX delimiters
-    text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$\n")
-    text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
-    text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
-    text = text.replace("\\begin{align*}\n", "\n$$\\begin{aligned}")
+    # # Convert LaTeX delimiters
+    # text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$\n")
+    # text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
+    # text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
 
     # Remove newline characters within LaTeX equations
     # text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
     # text = text.replace("\n$$", "$$").replace("$$\n", "$$")
     
+    # Convert LaTeX delimiters
+    text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$")
+    text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
+    text = text.replace("\\end{align*}", "\\end{aligned}$$")
+    text = text.replace("\\begin{align*}\n", "\n$$\\begin{aligned}")
+    text = text.replace("\\end{align*}\n", "\\end{aligned}$$")
+
+    # Ensure alignment is wrapped properly for display mode
+    if "\\begin{aligned}" in text and not text.startswith("$$"):
+        text = "\n$$" + text
+    if "\\end{aligned}" in text and not text.endswith("$$"):
+        text = text + "$$\n"
+   
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
