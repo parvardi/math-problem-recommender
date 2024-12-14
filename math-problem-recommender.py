@@ -56,16 +56,12 @@ def verify_user_credentials(username, password):
 
 def log_problem_feedback(username, problem_id, feedback_type):
     """
-    Logs user feedback on a problem.
-    Adds a 'created_at' timestamp to facilitate chronological ordering.
+    Logs the user's feedback with a timestamp.
     """
-    # feedback_type should be "LIKED" or "DISLIKED"
     query = f"""
-    MATCH (u:User {{username:$username}})
-    MATCH (p:Problem {{problem_id:$pid}})
-    MERGE (u)-[r:{feedback_type}]->(p)
-    ON CREATE SET r.created_at = timestamp()
-    ON MATCH SET r.created_at = timestamp()
+    MATCH (u:User {{username: $username}})
+    MATCH (p:Problem {{problem_id: $pid}})
+    CREATE (u)-[r:{feedback_type} {{timestamp: timestamp()}}]->(p)
     RETURN r
     """
     with driver.session() as session:
@@ -73,21 +69,18 @@ def log_problem_feedback(username, problem_id, feedback_type):
 
 def get_user_history(username):
     """
-    Retrieves the user's history, ordered by the most recent feedback first.
+    Retrieves the user's history ordered by timestamp ascending (oldest first).
     """
     query = """
-    MATCH (u:User {username:$username})-[r]->(p:Problem)
-    RETURN p.problem_id as problem_id, TYPE(r) as feedback_type, r.created_at as created_at
-    ORDER BY r.created_at DESC
+    MATCH (u:User {username: $username})-[r]->(p:Problem)
+    RETURN p.problem_id AS problem_id, TYPE(r) AS feedback_type, r.timestamp AS timestamp
+    ORDER BY r.timestamp ASC
     """
     with driver.session() as session:
         results = session.run(query, username=username).data()
         return results
 
 def get_problem_by_category(category):
-    """
-    Fetches a random problem from the specified category.
-    """
     query = """
     MATCH (p:Problem)
     WHERE p.type = $category
@@ -107,11 +100,8 @@ def get_problem_by_category(category):
     return None
 
 def get_similar_problems(problem_id):
-    """
-    Retrieves similar problems related to the given problem_id.
-    """
     query = """
-    MATCH (p:Problem {problem_id:$pid})-[:SIMILAR_TO]->(other:Problem)
+    MATCH (p:Problem {problem_id: $pid})-[:SIMILAR_TO]->(other:Problem)
     RETURN other.problem_id AS problem_id, other.problem AS problem, other.solution AS solution
     ORDER BY rand()
     LIMIT 3
@@ -121,9 +111,6 @@ def get_similar_problems(problem_id):
         return results
 
 def get_another_problem_in_category(category, exclude_id):
-    """
-    Fetches another problem from the same category, excluding the specified problem_id.
-    """
     query = """
     MATCH (p:Problem)
     WHERE p.type = $category AND p.problem_id <> $exclude_id
@@ -143,11 +130,8 @@ def get_another_problem_in_category(category, exclude_id):
     return None
 
 def get_problem_by_id(pid):
-    """
-    Fetches a problem by its problem_id.
-    """
     query = """
-    MATCH (p:Problem {problem_id:$pid})
+    MATCH (p:Problem {problem_id: $pid})
     RETURN p.problem_id AS problem_id, p.problem AS problem, p.solution AS solution
     """
     with driver.session() as session:
@@ -163,9 +147,10 @@ def get_problem_by_id(pid):
 # ---------------------
 # Asymptote Rendering Functions
 def render_asy(asy_code: str):
-    """
-    Renders Asymptote code to a PNG image.
-    """
+    import subprocess, tempfile, os
+    from PIL import Image
+    import streamlit as st
+
     current_dir = os.getcwd()
 
     with tempfile.NamedTemporaryFile(suffix=".asy", dir=current_dir, delete=False) as tmp:
@@ -201,9 +186,6 @@ def render_asy(asy_code: str):
     return img
 
 def process_text_with_asy(text: str):
-    """
-    Processes text to render Asymptote code blocks as images.
-    """
     # Convert LaTeX delimiters
     text = text.replace("\\[", "$$").replace("\\]", "$$")
     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
@@ -211,8 +193,8 @@ def process_text_with_asy(text: str):
 
     # Remove newline characters within LaTeX equations
     text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
-    text = text.replace("\n$$", "$$").replace("$$\n", "$$")
-
+    text = text.replace("\n$$", "$$").replace("$$\n", "$$$")
+    
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
@@ -257,7 +239,6 @@ def logout():
 # ---------------------
 # Streamlit UI and State Management
 
-# Initialize session state variables
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "username" not in st.session_state:
@@ -305,20 +286,19 @@ else:
     st.sidebar.markdown("""
     <style>
     /* Limit the height of the sidebar history section and make it scrollable */
-    div[data-testid="stSidebar"] > div > div > div:nth-child(3) > div {
+    .history-container {
         max-height: 400px;
         overflow-y: auto;
     }
     </style>
+    <div class="history-container">
     """, unsafe_allow_html=True)
 
     history = get_user_history(st.session_state.username)
     if history:
         for idx, h in enumerate(history, 1):
             display_text = f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})"
-            # Use a unique key by combining problem_id and index
-            button_key = f"history_{h['problem_id']}_{idx}"
-            if st.sidebar.button(display_text, key=button_key):
+            if st.sidebar.button(display_text, key=f"history_{h['problem_id']}_{idx}"):
                 # When clicked, load that problem into the current problem state
                 loaded_prob = get_problem_by_id(h['problem_id'])
                 if loaded_prob:
@@ -328,6 +308,14 @@ else:
                     st.sidebar.error("❌ Problem not found.")
     else:
         st.sidebar.write("No history yet. Start solving problems to see your history here!")
+
+    # Close the history container div
+    st.sidebar.markdown("</div>", unsafe_allow_html=True)
+
+    st.sidebar.write("---")  # Separator
+
+    # Logout Button in Sidebar
+    st.sidebar.button("🔒 Logout", on_click=logout)
 
     st.write("---")  # Separator
 
@@ -402,6 +390,3 @@ else:
                 else:
                     st.error("❌ No other problems found in this category.")
                 st.rerun()
-
-    # Logout Button in Sidebar
-    st.sidebar.button("🔒 Logout", on_click=logout)
