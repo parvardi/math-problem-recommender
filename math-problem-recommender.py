@@ -212,7 +212,7 @@ def process_text_with_asy(text: str):
         parts.append(text[start_idx:asy_start])
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
         # Add size commands
-        asy_code = asy_code + "unitsize(14mm);\nsize(2000,2000);\n"
+        asy_code = asy_code + "unitsize(35mm);\nsize(2000,2000);\n"
         asy_code = "import olympiad;\n" + asy_code
 
         try:
