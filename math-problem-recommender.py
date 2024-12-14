@@ -188,8 +188,8 @@ def render_asy(asy_code: str):
 def process_text_with_asy(text: str):
     # Convert LaTeX delimiters
     text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$\n")
-    text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
-    text = text.replace("\\end{align*}", "\\end{aligned}$$")
+    text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
+    text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
 
     # Remove newline characters within LaTeX equations
     # text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
