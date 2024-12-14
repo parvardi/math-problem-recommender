@@ -319,7 +319,19 @@ else:
 
     st.write("---")  # Separator
 
-    # Category Selection
+    # # Category Selection
+    # if st.session_state.category is None:
+    #     st.subheader("📂 Choose a Category")
+    #     category_choice = st.selectbox(
+    #         "Select the category you're preparing for:",
+    #         ["Algebra", "Geometry", "Number Theory", "Precalculus", "Counting & Probability"]
+    #     )
+    #     if st.button("Confirm Category"):
+    #         st.session_state.category = category_choice
+    #         st.success(f"📁 Category set to **{category_choice}**!")
+    #         st.rerun()
+
+    # Category Selection or Change Category
     if st.session_state.category is None:
         st.subheader("📂 Choose a Category")
         category_choice = st.selectbox(
@@ -330,6 +342,22 @@ else:
             st.session_state.category = category_choice
             st.success(f"📁 Category set to **{category_choice}**!")
             st.rerun()
+    else:
+        # Display the currently selected category
+        st.subheader(f"📂 Current Category: **{st.session_state.category}**")
+        if st.button("Change Category"):
+            st.session_state.category = None  # Reset the category
+            st.session_state.current_problem = None  # Clear the current problem
+            st.rerun()
+
+    # Fetch a problem if category is selected and no current problem
+    if st.session_state.category and st.session_state.current_problem is None:
+        prob = get_problem_by_category(st.session_state.category)
+        if prob:
+            st.session_state.current_problem = prob
+            st.rerun()
+        else:
+            st.error("❌ No problems found for this category.")
 
     # Fetch a problem if category is selected and no current problem
     if st.session_state.category and st.session_state.current_problem is None:
