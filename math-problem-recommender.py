@@ -146,7 +146,6 @@ def render_asy(asy_code: str):
     from PIL import Image
     import streamlit as st
 
-    # Use the current working directory for the temp file
     current_dir = os.getcwd()
 
     with tempfile.NamedTemporaryFile(suffix=".asy", dir=current_dir, delete=False) as tmp:
@@ -190,7 +189,7 @@ def process_text_with_asy(text: str):
     # Remove newline characters within LaTeX equations
     text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
     text = text.replace("\n$$", "$$").replace("$$\n", "$$")
-    
+
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
@@ -207,7 +206,6 @@ def process_text_with_asy(text: str):
 
         parts.append(text[start_idx:asy_start])
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
-
         # Add size commands
         asy_code = asy_code + "unitsize(14mm);\nsize(2000,2000);\n"
         asy_code = "import olympiad;\n" + asy_code
@@ -277,32 +275,32 @@ if not st.session_state.authenticated:
 else:
     st.write(f"👋 Hello, **{st.session_state.username}**!")
 
-    # Display User History
-    with st.expander("📜 View My History"):
-        # Add CSS to make this section scrollable if it gets too long
-        st.markdown("""
-        <style>
-        /* Limit the height of the history section and make it scrollable */
-        div[data-testid="stExpander"] > div > div > div:nth-child(2) {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    # --- Move History to the Sidebar ---
+    st.sidebar.subheader("📜 My History")
+    # Add CSS to make the history section scrollable if it gets too long
+    st.sidebar.markdown("""
+    <style>
+    /* Limit the height of the sidebar content and make it scrollable */
+    div[data-testid="stSidebar"] > div:nth-child(2) {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-        history = get_user_history(st.session_state.username)
-        if history:
-            for idx, h in enumerate(history, 1):
-                if st.button(f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})", key=f"history_{h['problem_id']}_{idx}"):
-                    # When clicked, load that problem into the current problem state
-                    loaded_prob = get_problem_by_id(h['problem_id'])
-                    if loaded_prob:
-                        st.session_state.current_problem = loaded_prob
-                        st.rerun()
-                    else:
-                        st.error("❌ Problem not found.")
-        else:
-            st.write("No history yet. Start solving problems to see your history here!")
+    history = get_user_history(st.session_state.username)
+    if history:
+        for idx, h in enumerate(history, 1):
+            if st.sidebar.button(f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})", key=f"history_{h['problem_id']}_{idx}"):
+                # When clicked, load that problem into the current problem state
+                loaded_prob = get_problem_by_id(h['problem_id'])
+                if loaded_prob:
+                    st.session_state.current_problem = loaded_prob
+                    st.experimental_rerun()
+                else:
+                    st.sidebar.error("❌ Problem not found.")
+    else:
+        st.sidebar.write("No history yet. Start solving problems to see your history here!")
 
     st.write("---")  # Separator
 
