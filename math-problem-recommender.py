@@ -294,15 +294,31 @@ else:
     <div class="history-container">
     """, unsafe_allow_html=True)
 
+    # history = get_user_history(st.session_state.username)
+    # if history:
+    #     for idx, h in enumerate(history, 1):
+    #         display_text = f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})"
+    #         if st.sidebar.button(display_text, key=f"history_{h['problem_id']}_{idx}"):
+    #             # When clicked, load that problem into the current problem state
+    #             loaded_prob = get_problem_by_id(h['problem_id'])
+    #             if loaded_prob:
+    #                 st.session_state.current_problem = loaded_prob
+    #                 st.rerun()
+    #             else:
+    #                 st.sidebar.error("❌ Problem not found.")
+    # else:
+    #     st.sidebar.write("No history yet. Start solving problems to see your history here!")
+
     history = get_user_history(st.session_state.username)
     if history:
         for idx, h in enumerate(history, 1):
             display_text = f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})"
             if st.sidebar.button(display_text, key=f"history_{h['problem_id']}_{idx}"):
-                # When clicked, load that problem into the current problem state
                 loaded_prob = get_problem_by_id(h['problem_id'])
                 if loaded_prob:
                     st.session_state.current_problem = loaded_prob
+                    # Reset the checkbox whenever loading a new problem
+                    st.session_state.show_solution = False
                     st.rerun()
                 else:
                     st.sidebar.error("❌ Problem not found.")
