@@ -8,8 +8,6 @@ import tempfile
 import os
 from PIL import Image
 
-
-
 # ---------------------
 # Set Streamlit Page Configuration FIRST
 st.set_page_config(page_title="Math Competition Problem Recommender")
@@ -126,6 +124,21 @@ def get_another_problem_in_category(category, exclude_id):
             }
     return None
 
+def get_problem_by_id(pid):
+    query = """
+    MATCH (p:Problem {problem_id:$pid})
+    RETURN p.problem_id AS problem_id, p.problem AS problem, p.solution AS solution
+    """
+    with driver.session() as session:
+        res = session.run(query, pid=pid).single()
+        if res:
+            return {
+                "problem_id": res["problem_id"],
+                "problem": res["problem"],
+                "solution": res["solution"]
+            }
+    return None
+
 # ---------------------
 # Asymptote Rendering Functions
 def render_asy(asy_code: str):
@@ -135,9 +148,7 @@ def render_asy(asy_code: str):
 
     # Use the current working directory for the temp file
     current_dir = os.getcwd()
-    # st.write(f"Current working directory: {current_dir}")
 
-    # Create a temporary .asy file in the current directory
     with tempfile.NamedTemporaryFile(suffix=".asy", dir=current_dir, delete=False) as tmp:
         tmp.write(asy_code.encode('utf-8'))
         tmp_name = tmp.name
@@ -148,22 +159,18 @@ def render_asy(asy_code: str):
     result = subprocess.run(["asy", "-f", "png", "-o", png_name, tmp_name], capture_output=True, text=True)
 
     if result.returncode != 0:
-        # Asymptote failed. Let's see why.
         st.error("Asymptote error (stderr):\n" + result.stderr)
         st.error("Asymptote output (stdout):\n" + result.stdout)
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
         raise RuntimeError("Asymptote failed to produce output. Check the error messages above.")
 
-    # Check if the PNG was produced
     if not os.path.exists(png_name):
-        # If PNG still doesn't exist, something went wrong
         st.error(f"No PNG file was produced by Asymptote. Expected at: {png_name}")
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
         raise RuntimeError("No PNG file produced by Asymptote.")
 
-    # Attempt to open the image
     img = Image.open(png_name)
 
     # Clean up
@@ -174,16 +181,11 @@ def render_asy(asy_code: str):
 
     return img
 
-
-
 def process_text_with_asy(text: str):
     # Convert LaTeX delimiters
     text = text.replace("\\[", "$$").replace("\\]", "$$")
     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
     text = text.replace("\\end{align*}", "\\end{aligned}$$")
-    # # Wrap align environment in a centered div for proper centering
-    # text = text.replace("$$\\begin{aligned}", "<div style='text-align: center;'>$$\\begin{aligned}")
-    # text = text.replace("\\end{aligned}$$", "\\end{aligned}$$</div>")
 
     # Remove newline characters within LaTeX equations
     text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
@@ -196,35 +198,24 @@ def process_text_with_asy(text: str):
     while True:
         asy_start = text.find(start_tag, start_idx)
         if asy_start == -1:
-            # no more asy tags
             parts.append(text[start_idx:])
             break
         asy_end = text.find(end_tag, asy_start)
         if asy_end == -1:
-            # no closing tag found; treat remainder as text
             parts.append(text[start_idx:])
             break
 
-        # Extract text before the asy block
         parts.append(text[start_idx:asy_start])
-
-        # Extract the asy code
         asy_code = text[asy_start+len(start_tag):asy_end].strip()
 
-        # Take care of image size
-        asy_code = asy_code + "unitsize(14mm);\n" + "size(2000,2000);\n"
-        # Prepend import line if needed
-        # Only do this if you know you always need olympiad.asy
-        # If you want to be safe and always have olympiad functions available, do this unconditionally:
+        # Add size commands
+        asy_code = asy_code + "unitsize(14mm);\nsize(2000,2000);\n"
         asy_code = "import olympiad;\n" + asy_code
 
-        # Render the asy code to an image
         try:
-            # Attempt to render the asy code
             img = render_asy(asy_code)
             parts.append(img)
         except RuntimeError:
-            # If rendering fails, append a special flag
             parts.append("ASY_RENDER_ERROR")
 
         start_idx = asy_end + len(end_tag)
@@ -245,7 +236,6 @@ def logout():
 # ---------------------
 # Streamlit UI and State Management
 
-# Initialize session state variables
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "username" not in st.session_state:
@@ -259,7 +249,6 @@ if "current_problem" not in st.session_state:
 st.title("Math Competition Problem Recommender")
 
 if not st.session_state.authenticated:
-    # Display a login/signup form
     st.header("Login or Sign Up")
     login_tab, signup_tab = st.tabs(["Login", "Sign Up"])
 
@@ -290,10 +279,28 @@ else:
 
     # Display User History
     with st.expander("📜 View My History"):
+        # Add CSS to make this section scrollable if it gets too long
+        st.markdown("""
+        <style>
+        /* Limit the height of the history section and make it scrollable */
+        div[data-testid="stExpander"] > div > div > div:nth-child(2) {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         history = get_user_history(st.session_state.username)
         if history:
             for idx, h in enumerate(history, 1):
-                st.write(f"{idx}. **Problem ID**: {h['problem_id']}, **Feedback**: {h['feedback_type']}")
+                if st.button(f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})", key=f"history_{h['problem_id']}"):
+                    # When clicked, load that problem into the current problem state
+                    loaded_prob = get_problem_by_id(h['problem_id'])
+                    if loaded_prob:
+                        st.session_state.current_problem = loaded_prob
+                        st.experimental_rerun()
+                    else:
+                        st.error("❌ Problem not found.")
         else:
             st.write("No history yet. Start solving problems to see your history here!")
 
@@ -325,7 +332,6 @@ else:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
 
-        # Process problem text
         problem_content = process_text_with_asy(st.session_state.current_problem["problem"])
         for item in problem_content:
             if isinstance(item, str):
