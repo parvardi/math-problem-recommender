@@ -191,7 +191,7 @@ def process_text_with_asy(text: str):
     text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
     text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
 
-    Remove newline characters within LaTeX equations
+    # Remove newline characters within LaTeX equations
     text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
     text = text.replace("\n$$", "$$").replace("$$\n", "$$")
 
