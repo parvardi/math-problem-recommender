@@ -294,6 +294,21 @@ else:
     <div class="history-container">
     """, unsafe_allow_html=True)
 
+    # history = get_user_history(st.session_state.username)
+    # if history:
+    #     for idx, h in enumerate(history, 1):
+    #         display_text = f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})"
+    #         if st.sidebar.button(display_text, key=f"history_{h['problem_id']}_{idx}"):
+    #             # When clicked, load that problem into the current problem state
+    #             loaded_prob = get_problem_by_id(h['problem_id'])
+    #             if loaded_prob:
+    #                 st.session_state.current_problem = loaded_prob
+    #                 st.rerun()
+    #             else:
+    #                 st.sidebar.error("❌ Problem not found.")
+    # else:
+    #     st.sidebar.write("No history yet. Start solving problems to see your history here!")
+
     history = get_user_history(st.session_state.username)
     if history:
         for idx, h in enumerate(history, 1):
@@ -303,11 +318,10 @@ else:
                 loaded_prob = get_problem_by_id(h['problem_id'])
                 if loaded_prob:
                     st.session_state.current_problem = loaded_prob
-                    st.rerun()
+                    st.session_state["show_solution"] = False  # Reset the solution checkbox
+                    st.experimental_rerun()
                 else:
                     st.sidebar.error("❌ Problem not found.")
-    else:
-        st.sidebar.write("No history yet. Start solving problems to see your history here!")
 
     # Close the history container div
     st.sidebar.markdown("</div>", unsafe_allow_html=True)
@@ -368,7 +382,28 @@ else:
         else:
             st.error("❌ No problems found for this category.")
 
-    # Display the current problem
+    # # Display the current problem
+    # if st.session_state.current_problem:
+    #     st.subheader(f"📝 Problem in {st.session_state.category}")
+    #     st.markdown("**Problem:**")
+
+    #     problem_content = process_text_with_asy(st.session_state.current_problem["problem"])
+    #     for item in problem_content:
+    #         if isinstance(item, str):
+    #             st.markdown(item)
+    #         else:
+    #             st.image(item, use_container_width=True)
+
+    #     show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
+    #     if show_solution:
+    #         st.markdown("**Solution:**")
+    #         solution_content = process_text_with_asy(st.session_state.current_problem["solution"])
+    #         for item in solution_content:
+    #             if isinstance(item, str):
+    #                 st.markdown(item)
+    #             else:
+    #                 st.image(item, use_container_width=True)
+
     if st.session_state.current_problem:
         st.subheader(f"📝 Problem in {st.session_state.category}")
         st.markdown("**Problem:**")
@@ -379,6 +414,10 @@ else:
                 st.markdown(item)
             else:
                 st.image(item, use_container_width=True)
+
+        # Checkbox for showing the solution
+        if "show_solution" not in st.session_state:
+            st.session_state["show_solution"] = False  # Initialize the checkbox state
 
         show_solution = st.checkbox("🔍 Show Solution", key="show_solution")
         if show_solution:
