@@ -187,7 +187,7 @@ def render_asy(asy_code: str):
 
 def process_text_with_asy(text: str):
     # Convert LaTeX delimiters
-    text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$")
+    text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$\n")
     text = text.replace("\\begin{align*}", "$$\\begin{aligned}")
     text = text.replace("\\end{align*}", "\\end{aligned}$$")
 
