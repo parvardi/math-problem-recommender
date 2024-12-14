@@ -293,12 +293,12 @@ else:
         history = get_user_history(st.session_state.username)
         if history:
             for idx, h in enumerate(history, 1):
-                if st.button(f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})", key=f"history_{h['problem_id']}"):
+                if st.button(f"{idx}. Problem ID: {h['problem_id']} (Feedback: {h['feedback_type']})", key=f"history_{h['problem_id']}_{idx}"):
                     # When clicked, load that problem into the current problem state
                     loaded_prob = get_problem_by_id(h['problem_id'])
                     if loaded_prob:
                         st.session_state.current_problem = loaded_prob
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("❌ Problem not found.")
         else:
