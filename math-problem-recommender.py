@@ -186,28 +186,14 @@ def render_asy(asy_code: str):
     return img
 
 def process_text_with_asy(text: str):
-    # # Convert LaTeX delimiters
-    # text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$\n")
-    # text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
-    # text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
+    # Convert LaTeX delimiters
+    text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$\n")
+    text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
+    text = text.replace("\\end{align*}", "\\end{aligned}$$\n")
 
-    # Remove newline characters within LaTeX equations
-    # text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
-    # text = text.replace("\n$$", "$$").replace("$$\n", "$$")
-
-     # Step 1: Replace \[ and \] with $$ for display math
-    text = text.replace("\\[", "$$")
-    text = text.replace("\\]", "$$")
-
-    # Step 2: Replace \begin{align*} ... \end{align*} with $$\begin{aligned} ... \end{aligned}$$
-    def replace_align(match):
-        content = match.group(1)
-        # Remove any trailing \\ before \end{align*}
-        content = re.sub(r"\\\\\s*$", "", content, flags=re.MULTILINE)
-        return f"$$\\begin{{aligned}}\n{content}\n\\end{{aligned}}$$"
-
-    # Use regex to find all align* environments and replace them
-    text = re.sub(r"\\begin{align\*}(.*?)\\end{align\*}", replace_align, text, flags=re.DOTALL)
+    Remove newline characters within LaTeX equations
+    text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
+    text = text.replace("\n$$", "$$").replace("$$\n", "$$")
 
     start_tag = "[asy]"
     end_tag = "[/asy]"
