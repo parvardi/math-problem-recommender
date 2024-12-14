@@ -194,20 +194,21 @@ def process_text_with_asy(text: str):
     # Remove newline characters within LaTeX equations
     # text = text.replace("\n\\[", "$$").replace("\\]\n", "$$")
     # text = text.replace("\n$$", "$$").replace("$$\n", "$$")
-    
-    # Convert LaTeX delimiters
-    text = text.replace("\\[", "$$\\begin{aligned}").replace("\\]", "\\end{aligned}$$")
-    text = text.replace("\\begin{align*}", "\n$$\\begin{aligned}")
-    text = text.replace("\\end{align*}", "\\end{aligned}$$")
-    text = text.replace("\\begin{align*}\n", "\n$$\\begin{aligned}")
-    text = text.replace("\\end{align*}\n", "\\end{aligned}$$")
 
-    # Ensure alignment is wrapped properly for display mode
-    if "\\begin{aligned}" in text and not text.startswith("$$"):
-        text = "\n$$" + text
-    if "\\end{aligned}" in text and not text.endswith("$$"):
-        text = text + "$$\n"
-   
+     # Step 1: Replace \[ and \] with $$ for display math
+    text = text.replace("\\[", "$$")
+    text = text.replace("\\]", "$$")
+
+    # Step 2: Replace \begin{align*} ... \end{align*} with $$\begin{aligned} ... \end{aligned}$$
+    def replace_align(match):
+        content = match.group(1)
+        # Remove any trailing \\ before \end{align*}
+        content = re.sub(r"\\\\\s*$", "", content, flags=re.MULTILINE)
+        return f"$$\\begin{{aligned}}\n{content}\n\\end{{aligned}}$$"
+
+    # Use regex to find all align* environments and replace them
+    text = re.sub(r"\\begin{align\*}(.*?)\\end{align\*}", replace_align, text, flags=re.DOTALL)
+
     start_tag = "[asy]"
     end_tag = "[/asy]"
     parts = []
